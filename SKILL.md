@@ -1,6 +1,6 @@
 # Premium Website Rebuild
 
-Scrape a client's existing website, download all assets, and rebuild it as a premium dark luxury site with booking/lead-gen platform and admin dashboard, then push to GitHub and deploy to Netlify. Works for ANY business type.
+Scrape a client's existing website, download all assets, and rebuild it as a premium, high-converting site with booking/lead-gen platform and admin dashboard, then push to GitHub and deploy to Netlify. Works for ANY business type. Design theme (dark, light, colorful, etc.) should match the brand and industry — not every site should be dark.
 
 ## Input: $ARGUMENTS
 
@@ -308,21 +308,45 @@ Nav → Hero → About → Services/Offerings → Seasonal/Availability → Equi
 
 ### Phase 3d: Design & CSS
 
-**Color scheme selection by industry:**
-| Business Type | Primary | Accent | Vibe |
-|---|---|---|---|
-| Fishing/Outdoor | Navy #0a1628 | Gold #c8a96e | Nautical luxury |
-| Restaurant/Bar | Dark charcoal #1a1a2e | Warm gold #d4a853 | Upscale dining |
-| Law Firm | Dark navy #0d1b2a | Silver/gold #b8860b | Authority & trust |
-| Salon/Medspa | Deep plum #1a0a2e | Rose gold #c9a87c | Elegant & modern |
-| Contractor | Slate #1c2833 | Safety orange #e67e22 | Industrial premium |
-| Gym/Fitness | Black #0a0a0a | Electric green #00ff88 | Energy & power |
-| Medical | Dark blue #0a192f | Teal #0fbcf9 | Clinical & clean |
-| Real Estate | Navy #0f2027 | Gold #c9b037 | Luxury property |
-| Default | Navy #0a1628 | Gold #c8a96e | Premium dark luxury |
+**Design theme selection — match the brand, NOT a one-size-fits-all dark theme:**
 
-- If client has existing brand colors, use those instead (update CSS `:root` variables)
-- Logo displays in nav (white bg on scroll) with text fallback
+First, check the client's existing site and brand for color cues. If they have established brand colors, USE THEM. If not, pick a theme that fits the industry and audience:
+
+| Business Type | Light/Dark | Primary | Accent | Vibe |
+|---|---|---|---|---|
+| Fishing/Outdoor | Dark | Navy #0a1628 | Gold #c8a96e | Nautical luxury |
+| Restaurant (upscale) | Dark | Charcoal #1a1a2e | Warm gold #d4a853 | Upscale dining |
+| Restaurant (casual/family) | Light | White #ffffff | Warm red #c0392b | Friendly & inviting |
+| Law Firm | Dark or Light | Navy #0d1b2a or White | Gold #b8860b or Navy | Authority & trust |
+| Salon/Medspa | Light | White #fafafa | Rose gold #c9a87c | Elegant & airy |
+| Contractor | Dark | Slate #1c2833 | Safety orange #e67e22 | Industrial premium |
+| Gym/Fitness | Dark | Black #0a0a0a | Electric green #00ff88 | Energy & power |
+| Medical/Dental | Light | White #f8f9fa | Teal #0fbcf9 | Clean & trustworthy |
+| Real Estate (luxury) | Dark | Navy #0f2027 | Gold #c9b037 | Luxury property |
+| Real Estate (residential) | Light | White #ffffff | Blue #2980b9 | Approachable & professional |
+| Photographer/Creative | Light or Dark | Depends on portfolio style | Minimal accent | Let the work speak |
+| Childcare/Education | Light | Soft white #fff8f0 | Playful blue #3498db | Warm & trustworthy |
+| Tech/SaaS | Light | White #f5f7fa | Vibrant blue/purple #6c5ce7 | Modern & clean |
+| Default | Match existing brand | — | — | Premium but appropriate |
+
+**Light theme considerations:**
+- Nav: transparent → white on scroll (dark text)
+- Hero: can use overlay gradient on photo for text contrast, or split layout (text left, image right)
+- Sections alternate white / soft gray (#f8f9fa) backgrounds for visual rhythm
+- Cards use subtle shadows and borders instead of glowing on dark
+- Footer can be dark (navy/charcoal) even on a light site for contrast
+
+**Dark theme considerations:**
+- Nav: transparent → white on scroll (switch to dark text)
+- Hero: full-bleed photo with dark overlay
+- Sections alternate dark shades for depth
+- Cards use subtle glow/border effects
+- Text is white/light gray on dark backgrounds
+
+**The rule: the site should feel premium and intentional for THAT specific business.** A children's dentist should NOT look like a nightclub. A luxury fishing charter should NOT look like a medical clinic. Match the vibe to the audience.
+
+- If client has existing brand colors, ALWAYS use those (update CSS `:root` variables)
+- Logo displays in nav with appropriate contrast for both transparent and scrolled states
 - Hero uses best showcase photo (MUST be >100KB)
 - About section uses owner/team photo
 - CTA banner uses action/portfolio photo
@@ -350,7 +374,7 @@ Nav → Hero → About → Services/Offerings → Seasonal/Availability → Equi
 - Staggered reveal animations on card grids
 - Hover micro-interactions on all interactive elements
 - Glass-morphism or gradient overlays where appropriate
-- The site must feel premium and modern — if it looks like a basic template, it's not done
+- The site must feel premium and modern for its industry — light or dark, but never generic. If it looks like a basic template, it's not done
 
 ### Phase 4: Admin Dashboard
 
@@ -532,4 +556,4 @@ Add these CSS blocks (reference `captain-hoggs-charters/index.html` for proven i
 - **CRITICAL `</title>` BUG**: Always verify closing `</title>` tag after customizing admin.html
 - **ALWAYS DEPLOY admin.html** — verify it loads at `{site}/admin.html` after every deploy
 - **ALWAYS DEPLOY Netlify Functions** — include in deploy with netlify.toml
-- **NEVER build a basic-looking site** — must use GSAP/Framer Motion, premium animations, dark luxury aesthetic. If it looks like a template, it's not done.
+- **NEVER build a basic-looking site** — must use GSAP/Framer Motion, premium animations, and a design that feels intentional and high-end for the specific industry. Light or dark — doesn't matter — but it must have wow factor. If it looks like a generic template, it's not done.
