@@ -65,6 +65,124 @@ Based on detected business type, also gather:
 | **Photographer/Creative** | Portfolio categories, packages, booking calendar |
 | **Any Other** | Services, team members, portfolio/gallery, testimonials, unique selling points |
 
+### Phase 1d: Extract Brand Colors from Original Site
+**MANDATORY** — Before choosing any color scheme, extract the actual colors from the client's existing website using Playwright:
+
+```javascript
+import { chromium } from 'playwright';
+const browser = await chromium.launch();
+const page = await browser.newPage();
+await page.goto(url, { waitUntil: 'networkidle' });
+await page.waitForTimeout(3000);
+
+const colors = await page.evaluate(() => {
+  const colorMap = {};
+  const els = document.querySelectorAll('*');
+  
+  els.forEach(el => {
+    const style = getComputedStyle(el);
+    // Collect background colors, text colors, border colors
+    ['backgroundColor', 'color', 'borderColor'].forEach(prop => {
+      const val = style[prop];
+      if (val && val !== 'rgba(0, 0, 0, 0)' && val !== 'transparent') {
+        colorMap[val] = (colorMap[val] || 0) + 1;
+      }
+    });
+  });
+
+  // Also grab CSS custom properties from :root
+  const rootStyles = getComputedStyle(document.documentElement);
+  const cssVars = {};
+  for (const sheet of document.styleSheets) {
+    try {
+      for (const rule of sheet.cssRules) {
+        if (rule.selectorText === ':root') {
+          for (const prop of rule.style) {
+            if (prop.startsWith('--')) {
+              cssVars[prop] = rule.style.getPropertyValue(prop).trim();
+            }
+          }
+        }
+      }
+    } catch(e) {} // skip cross-origin sheets
+  }
+
+  // Get meta theme-color if present
+  const themeColor = document.querySelector('meta[name="theme-color"]')?.content;
+
+  // Sort by frequency to find dominant colors
+  const sorted = Object.entries(colorMap)
+    .filter(([c]) => !['rgb(0, 0, 0)', 'rgb(255, 255, 255)', 'rgb(0, 0, 0, 0)'].includes(c))
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 20);
+
+  return { dominantColors: sorted, cssVars, themeColor };
+});
+
+// Also extract colors from logo/brand elements specifically
+const brandColors = await page.evaluate(() => {
+  const brand = {};
+  // Check header/nav background
+  const nav = document.querySelector('nav, header, [class*="nav"], [class*="header"]');
+  if (nav) brand.navBg = getComputedStyle(nav).backgroundColor;
+  // Check buttons/CTAs for accent color
+  const btn = document.querySelector('a[class*="btn"], button[class*="btn"], .cta, [class*="button"]');
+  if (btn) {
+    brand.buttonBg = getComputedStyle(btn).backgroundColor;
+    brand.buttonText = getComputedStyle(btn).color;
+  }
+  // Check footer
+  const footer = document.querySelector('footer');
+  if (footer) brand.footerBg = getComputedStyle(footer).backgroundColor;
+  // Check headings
+  const h1 = document.querySelector('h1');
+  if (h1) brand.headingColor = getComputedStyle(h1).color;
+  return brand;
+});
+
+await browser.close();
+```
+
+**Use extracted colors to set the new site's `:root` CSS variables:**
+- **Primary color** → most frequent non-white/black background (nav bg or hero overlay)
+- **Accent color** → button/CTA background color
+- **Text color** → heading color or most frequent text color
+- **Background** → page background or section backgrounds
+
+If the original site is poorly designed with no clear brand colors, fall back to the industry-appropriate palette from Phase 3d.
+
+### Phase 1e: Fetch Logo via Brandfetch API
+**MANDATORY** — Always try to get the official high-res logo from Brandfetch before falling back to scraping:
+
+```javascript
+// Brandfetch free API — no key needed for basic lookup
+// Extract the domain from the client URL (e.g., "example.com")
+const domain = new URL(url).hostname.replace('www.', '');
+
+// Fetch brand data
+const response = await fetch(`https://api.brandfetch.io/v2/brands/${domain}`, {
+  headers: { 'Authorization': 'Bearer YOUR_BRANDFETCH_API_KEY' }
+});
+// If no API key, try the free endpoint:
+// https://api.brandfetch.io/v2/search/${businessName}
+```
+
+**Alternative free approach — use the Brandfetch logo CDN directly:**
+```
+https://logo.clearbit.com/{domain}
+https://cdn.brandfetch.io/id/{domain}/w/400/h/400
+```
+
+**Logo fetch priority order:**
+1. **Brandfetch CDN** (`https://cdn.brandfetch.io/id/{domain}`) — highest quality, official logo
+2. **Clearbit Logo API** (`https://logo.clearbit.com/{domain}`) — free, no key needed, returns PNG
+3. **Google Favicon API** (`https://www.google.com/s2/favicons?domain={domain}&sz=256`) — fallback for favicon-quality
+4. **Scraped from website** — download from `<img>` tags in header/nav with alt containing business name or "logo"
+5. **Downloads folder** — check for pre-downloaded logo files
+
+**Download the best logo found and save as `images/logo.png`.**
+If Brandfetch/Clearbit return an SVG, convert or also save as `images/logo.svg` and use SVG in the nav for crisp rendering at all sizes.
+
 ### Phase 2: Scrape Photos & Identify Key Images
 
 **2a. Download all photos using platform-appropriate strategy:**
@@ -74,7 +192,7 @@ Based on detected business type, also gather:
 4. Download all images >10KB to `images/` folder using Node.js (NOT Python — not installed)
 5. Check Downloads folder for any pre-downloaded photos
 6. Remove business cards, flyers, tracking pixels, tiny icons, map screenshots
-7. Find and copy logo to `images/logo.png`
+7. Logo should already be fetched from Phase 1e (Brandfetch/Clearbit). If not, find and copy logo to `images/logo.png`
 8. **Hero image MUST be >100KB** — keep scraping until you get at least one high-quality photo
 
 **2b. Browse Site with Playwright to Identify Key Photos**
@@ -310,7 +428,9 @@ Nav → Hero → About → Services/Offerings → Seasonal/Availability → Equi
 
 **Design theme selection — match the brand, NOT a one-size-fits-all dark theme:**
 
-First, check the client's existing site and brand for color cues. If they have established brand colors, USE THEM. If not, pick a theme that fits the industry and audience:
+**Step 1: Use the colors extracted in Phase 1d.** The Playwright color extraction already grabbed the client's real brand colors from their existing site. Map those to the new site's `:root` variables. Refine/elevate them if needed (e.g., slightly richer saturation, better contrast ratios) but keep the same color family so the client recognizes their brand.
+
+**Step 2: Only if Phase 1d found no usable brand colors** (e.g., site was pure black/white with no accent), fall back to an industry-appropriate palette:
 
 | Business Type | Light/Dark | Primary | Accent | Vibe |
 |---|---|---|---|---|
